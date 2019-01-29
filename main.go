@@ -10,6 +10,76 @@ import (
 )
 
 func main() {
+	log.Level = log.LevelDebug
+	rabbitMQTest2()
+}
+
+func rabbitMQTest2(){
+	//============================================================================
+	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
+		Server:      "127.0.0.1",
+		Port:        5672,
+		VirtualHost: "TestHost2",
+		User:        "sa",
+		Password:    "123456",
+	}
+	rabbitMQ, err := goToolRabbitMQ.NewRabbitMQ(rabbitMQConfig)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	err = rabbitMQ.QueueDeclareSimple("TestQ")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	errCh := make(chan *goToolRabbitMQ.RabbitMQError)
+	rabbitMQ.NotifyErr(errCh)
+	go func(){
+		for {
+			select{
+			case msg:=<-errCh:
+				fmt.Println(msg.Tag)
+				fmt.Println(msg.Type)
+				fmt.Println(msg.Error.Error())
+			}
+		}
+
+	}()
+
+	err = rabbitMQ.AddProducer("")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	go func(){
+		for {
+			msg := "TestQ test message " + goToolCommon.GetDateTimeStr(time.Now())
+			//fmt.Println(msg)
+			err = rabbitMQ.Publish("", "", "TestQ", msg)
+			if err != nil {
+				//fmt.Println(err.Error())
+			}
+			time.Sleep(time.Millisecond * 1000)
+		}
+	}()
+
+	err = rabbitMQ.AddConsumer("","TestQ",cHandler)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	//============================================================================
+	c := make(chan struct{})
+	<-c
+}
+
+func cHandler(msg string){
+	fmt.Println(goToolCommon.GetDateTimeStr(time.Now()) + " " + msg)
+}
+
+func commonTest(){
 	//============================================================================
 	for i := 0; i < 10; i++ {
 		fmt.Println(goToolCommon.RandInt(10, 100))
@@ -29,11 +99,19 @@ func main() {
 	_ = goToolCommon.Log("Test Message")
 	_ = goToolCommon.LogFile("Test Message", "logFile")
 	//============================================================================
+}
+
+func logTest(){
+	//============================================================================
 	msg := "test message"
 	log.Debug(msg)
 	log.Info(msg)
 	log.Warn(msg)
 	log.Error(msg)
+	//============================================================================
+}
+
+func redisTest(){
 	//============================================================================
 	redisConfig := &goToolRedis.RedisConfig{
 		Server:      "127.0.0.1",
@@ -51,7 +129,13 @@ func main() {
 	fmt.Println(redis.Get(0, "testKeyN"))
 	fmt.Println(redis.Del(0, "testKey"))
 	fmt.Println(redis.Del(0, "testKeyM"))
+	//============================================================================
+
 	redis.Close()
+	//============================================================================
+}
+
+func rabbitMQTest(){
 	//============================================================================
 	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
 		Server:      "127.0.0.1",
