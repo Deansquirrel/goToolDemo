@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Deansquirrel/goToolCommon"
 	log "github.com/Deansquirrel/goToolLog"
+	"github.com/Deansquirrel/goToolMSSql"
 	"github.com/Deansquirrel/goToolRabbitMQ"
 	"github.com/Deansquirrel/goToolRedis"
 	"time"
@@ -11,13 +12,56 @@ import (
 
 func main() {
 	log.Level = log.LevelDebug
-	rabbitMQTest2()
+	log.IsDebug = true
+	sqlTest()
 }
 
-func rabbitMQTest2(){
+func sqlTest() {
+	config := &goToolMSSql.MSSqlConfig{
+		Server: "192.168.5.1",
+		Port:   2006,
+		DbName: "master",
+		User:   "sa",
+		Pwd:    "",
+	}
+	conn, err := goToolMSSql.GetConn(config)
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	rows, err := conn.Query("" +
+		"SELECT * FROM SysDatabases")
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	columns, err := rows.Columns()
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	for _, val := range columns {
+		fmt.Println(val)
+	}
+
+	//for rows.Next(){
+	//	colTypes,err := rows.ColumnTypes()
+	//	if err != nil {
+	//		log.Debug(err.Error())
+	//	} else {
+	//		fmt.Println(colTypes)
+	//	}
+	//
+	//}
+}
+
+func rabbitMQTest2() {
 	//============================================================================
 	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
-		Server:      "127.0.0.1",
+		Server:      "192.168.8.39",
 		Port:        5672,
 		VirtualHost: "TestHost2",
 		User:        "sa",
@@ -36,10 +80,10 @@ func rabbitMQTest2(){
 
 	errCh := make(chan *goToolRabbitMQ.RabbitMQError)
 	rabbitMQ.NotifyErr(errCh)
-	go func(){
+	go func() {
 		for {
-			select{
-			case msg:=<-errCh:
+			select {
+			case msg := <-errCh:
 				fmt.Println(msg.Tag)
 				fmt.Println(msg.Type)
 				fmt.Println(msg.Error.Error())
@@ -53,7 +97,7 @@ func rabbitMQTest2(){
 		fmt.Println(err.Error())
 		return
 	}
-	go func(){
+	go func() {
 		for {
 			msg := "TestQ test message " + goToolCommon.GetDateTimeStr(time.Now())
 			//fmt.Println(msg)
@@ -65,7 +109,7 @@ func rabbitMQTest2(){
 		}
 	}()
 
-	err = rabbitMQ.AddConsumer("","TestQ",cHandler)
+	err = rabbitMQ.AddConsumer("", "TestQ", cHandler)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -75,11 +119,11 @@ func rabbitMQTest2(){
 	<-c
 }
 
-func cHandler(msg string){
+func cHandler(msg string) {
 	fmt.Println(goToolCommon.GetDateTimeStr(time.Now()) + " " + msg)
 }
 
-func commonTest(){
+func commonTest() {
 	//============================================================================
 	for i := 0; i < 10; i++ {
 		fmt.Println(goToolCommon.RandInt(10, 100))
@@ -101,7 +145,7 @@ func commonTest(){
 	//============================================================================
 }
 
-func logTest(){
+func logTest() {
 	//============================================================================
 	msg := "test message"
 	log.Debug(msg)
@@ -111,7 +155,7 @@ func logTest(){
 	//============================================================================
 }
 
-func redisTest(){
+func redisTest() {
 	//============================================================================
 	redisConfig := &goToolRedis.RedisConfig{
 		Server:      "127.0.0.1",
@@ -135,7 +179,7 @@ func redisTest(){
 	//============================================================================
 }
 
-func rabbitMQTest(){
+func rabbitMQTest() {
 	//============================================================================
 	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
 		Server:      "127.0.0.1",
