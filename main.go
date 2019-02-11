@@ -3,17 +3,62 @@ package main
 import (
 	"fmt"
 	"github.com/Deansquirrel/goToolCommon"
+	"github.com/Deansquirrel/goToolEnvironment"
 	log "github.com/Deansquirrel/goToolLog"
 	"github.com/Deansquirrel/goToolMSSql"
 	"github.com/Deansquirrel/goToolRabbitMQ"
 	"github.com/Deansquirrel/goToolRedis"
+	"github.com/Deansquirrel/goToolSecret"
 	"time"
 )
 
 func main() {
 	log.Level = log.LevelDebug
 	log.IsDebug = true
-	sqlTest()
+	secretTest()
+}
+
+func secretTest() {
+	goToolSecret.SetCode("")
+	str := "yuansong"
+	r, err := goToolSecret.Encrypt(str)
+	if err != nil {
+		log.Debug(err.Error())
+	} else {
+		log.Debug("r:" + r)
+	}
+}
+
+func netTest() {
+	addr, err := goToolEnvironment.GetIntranetAddr()
+	if err != nil {
+		log.Debug(err.Error())
+	} else {
+		log.Debug(addr)
+	}
+	iAddr, err := goToolEnvironment.GetInternetAddr()
+	if err != nil {
+		log.Debug(err.Error())
+	} else {
+		log.Debug(iAddr)
+	}
+
+}
+
+func environmentTest() {
+	log.Debug(goToolEnvironment.GetOsName())
+	ver, err := goToolEnvironment.GetOsVer()
+	if err != nil {
+		log.Debug(err.Error())
+	} else {
+		log.Debug(ver)
+	}
+	hostName, err := goToolEnvironment.GetHostName()
+	if err != nil {
+		log.Debug(err.Error())
+	} else {
+		log.Debug(hostName)
+	}
 }
 
 func sqlTest() {
