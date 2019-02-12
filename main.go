@@ -14,19 +14,28 @@ import (
 
 func main() {
 	log.Level = log.LevelDebug
-	log.IsDebug = true
+	log.StdOut = true
 	secretTest()
 }
 
 func secretTest() {
-	goToolSecret.SetCode("")
+	//goToolSecret.SetCode("")
 	str := "yuansong"
-	r, err := goToolSecret.Encrypt(str)
+	s, err := goToolSecret.EncryptStr(str)
 	if err != nil {
 		log.Debug(err.Error())
-	} else {
-		log.Debug("r:" + r)
+		return
 	}
+	log.Debug(s)
+
+	//s = "VEh7RWN2dwFoYngHeF9FUnhcAGdSA2dIYmZjUnhbXkZXYnhCeFwAdVMDY114W15FfGJGWFNkY11SA3xYflh9X116W1xYfVddWngCXFh7U11DBVNfXnh5XF0HdVxdaFZYfXJ7RWd2CENrZgVYflh7aVN0BF9oZ1ZDfwEAZX90ZwdmdgBlf3ZZSGRcfwJpeWRGfHV/Wml5ZEZ8dX9aeF8BDA=="
+
+	r, err := goToolSecret.DecryptStr(s)
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	log.Debug(r)
 }
 
 func netTest() {
