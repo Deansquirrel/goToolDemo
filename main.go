@@ -6,7 +6,6 @@ import (
 	"github.com/Deansquirrel/goToolEnvironment"
 	log "github.com/Deansquirrel/goToolLog"
 	"github.com/Deansquirrel/goToolMSSql"
-	"github.com/Deansquirrel/goToolRabbitMQ"
 	"github.com/Deansquirrel/goToolRedis"
 	"github.com/Deansquirrel/goToolSecret"
 	"time"
@@ -15,7 +14,21 @@ import (
 func main() {
 	log.Level = log.LevelDebug
 	log.StdOut = true
-	secretTest()
+	test()
+}
+
+func test() {
+	currPath, err := goToolCommon.GetCurrPath()
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	log.Debug(fmt.Sprintf("currPath：%s", currPath))
+	fullPath := currPath + "\\aa\\bb\\cc\\cc\\ee"
+	err = goToolCommon.CheckAndCreateFolder(fullPath)
+	if err != nil {
+		log.Debug(err.Error())
+	}
 }
 
 func secretTest() {
@@ -112,66 +125,67 @@ func sqlTest() {
 	//}
 }
 
-func rabbitMQTest2() {
-	//============================================================================
-	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
-		Server:      "192.168.8.39",
-		Port:        5672,
-		VirtualHost: "TestHost2",
-		User:        "sa",
-		Password:    "123456",
-	}
-	rabbitMQ, err := goToolRabbitMQ.NewRabbitMQ(rabbitMQConfig)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	err = rabbitMQ.QueueDeclareSimple("TestQ")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	errCh := make(chan *goToolRabbitMQ.RabbitMQError)
-	rabbitMQ.NotifyErr(errCh)
-	go func() {
-		for {
-			select {
-			case msg := <-errCh:
-				fmt.Println(msg.Tag)
-				fmt.Println(msg.Type)
-				fmt.Println(msg.Error.Error())
-			}
-		}
-
-	}()
-
-	err = rabbitMQ.AddProducer("")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	go func() {
-		for {
-			msg := "TestQ test message " + goToolCommon.GetDateTimeStr(time.Now())
-			//fmt.Println(msg)
-			err = rabbitMQ.Publish("", "", "TestQ", msg)
-			if err != nil {
-				//fmt.Println(err.Error())
-			}
-			time.Sleep(time.Millisecond * 1000)
-		}
-	}()
-
-	err = rabbitMQ.AddConsumer("", "TestQ", cHandler)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	//============================================================================
-	c := make(chan struct{})
-	<-c
-}
+//
+//func rabbitMQTest2() {
+//	//============================================================================
+//	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
+//		Server:      "192.168.8.39",
+//		Port:        5672,
+//		VirtualHost: "TestHost2",
+//		User:        "sa",
+//		Password:    "123456",
+//	}
+//	rabbitMQ, err := goToolRabbitMQ.NewRabbitMQ(rabbitMQConfig)
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	err = rabbitMQ.QueueDeclareSimple("TestQ")
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//
+//	errCh := make(chan *goToolRabbitMQ.RabbitMQError)
+//	rabbitMQ.NotifyErr(errCh)
+//	go func() {
+//		for {
+//			select {
+//			case msg := <-errCh:
+//				fmt.Println(msg.Tag)
+//				fmt.Println(msg.Type)
+//				fmt.Println(msg.Error.Error())
+//			}
+//		}
+//
+//	}()
+//
+//	err = rabbitMQ.AddProducer("")
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	go func() {
+//		for {
+//			msg := "TestQ test message " + goToolCommon.GetDateTimeStr(time.Now())
+//			//fmt.Println(msg)
+//			err = rabbitMQ.Publish("", "", "TestQ", msg)
+//			if err != nil {
+//				//fmt.Println(err.Error())
+//			}
+//			time.Sleep(time.Millisecond * 1000)
+//		}
+//	}()
+//
+//	err = rabbitMQ.AddConsumer("", "TestQ", cHandler)
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	//============================================================================
+//	c := make(chan struct{})
+//	<-c
+//}
 
 func cHandler(msg string) {
 	fmt.Println(goToolCommon.GetDateTimeStr(time.Now()) + " " + msg)
@@ -233,34 +247,35 @@ func redisTest() {
 	//============================================================================
 }
 
-func rabbitMQTest() {
-	//============================================================================
-	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
-		Server:      "127.0.0.1",
-		Port:        5672,
-		VirtualHost: "TestHost2",
-		User:        "sa",
-		Password:    "123456",
-	}
-	rabbitMQ, err := goToolRabbitMQ.NewRabbitMQ(rabbitMQConfig)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	err = rabbitMQ.QueueDeclareSimple("TestQ")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	err = rabbitMQ.AddProducer("")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	err = rabbitMQ.Publish("", "", "TestQ", "TestQ test ,essage")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	//============================================================================
-}
+//
+//func rabbitMQTest() {
+//	//============================================================================
+//	rabbitMQConfig := &goToolRabbitMQ.RabbitMQConfig{
+//		Server:      "127.0.0.1",
+//		Port:        5672,
+//		VirtualHost: "TestHost2",
+//		User:        "sa",
+//		Password:    "123456",
+//	}
+//	rabbitMQ, err := goToolRabbitMQ.NewRabbitMQ(rabbitMQConfig)
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	err = rabbitMQ.QueueDeclareSimple("TestQ")
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	err = rabbitMQ.AddProducer("")
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	err = rabbitMQ.Publish("", "", "TestQ", "TestQ test ,essage")
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		return
+//	}
+//	//============================================================================
+//}
