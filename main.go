@@ -19,9 +19,7 @@ func main() {
 	log.Level = log.LevelDebug
 	log.StdOut = true
 	//test()
-	log.Debug("Start")
 	getData()
-	log.Debug("Complete")
 }
 
 func getData() {
