@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/Deansquirrel/goToolCommon"
 	"github.com/Deansquirrel/goToolEnvironment"
@@ -8,13 +9,69 @@ import (
 	"github.com/Deansquirrel/goToolMSSql"
 	"github.com/Deansquirrel/goToolRedis"
 	"github.com/Deansquirrel/goToolSecret"
+	"io"
+	"os"
+	"strings"
 	"time"
 )
 
 func main() {
 	log.Level = log.LevelDebug
 	log.StdOut = true
-	test()
+	//test()
+	log.Debug("Start")
+	getData()
+	log.Debug("Complete")
+}
+
+func getData() {
+	currPath, err := goToolCommon.GetCurrPath()
+	if err != nil {
+		log.Error(fmt.Sprintf("get curr path error: %s", err.Error()))
+		return
+	}
+	fullPath := currPath + "\\" + "txt"
+	_, fileList, err := goToolCommon.GetFolderAndFileList(fullPath)
+	if err != nil {
+		log.Error(fmt.Sprintf("get file list error: %s", err.Error()))
+		return
+	}
+	result := make([]string, 0)
+	for _, f := range fileList {
+		fi, err := os.Open(fullPath + "\\" + f)
+		if err != nil {
+			log.Error(fmt.Sprintf("open file error: %s", err.Error()))
+			return
+		}
+
+		strPre := "备注描述："
+
+		br := bufio.NewReader(fi)
+		for {
+			data, _, err := br.ReadLine()
+			if err == io.EOF {
+				break
+			}
+			str := string(data)
+			str = strings.Trim(str, "")
+
+			if strings.HasPrefix(str, strPre) {
+				str = strings.Replace(str, strPre, "", -1)
+				result = append(result, str)
+			}
+		}
+		_ = fi.Close()
+	}
+	fileName := goToolCommon.GetDateTimeStr(time.Now()) + ".txt"
+	fileName = strings.Replace(fileName, " ", "", -1)
+	fileName = strings.Replace(fileName, "-", "", -1)
+	fileName = strings.Replace(fileName, ":", "", -1)
+	for _, s := range result {
+		err := goToolCommon.LogFile(s, fileName)
+		if err != nil {
+			log.Error(fmt.Sprintf("save data error: %s data: %s", err.Error(), s))
+		}
+	}
 }
 
 func test() {
