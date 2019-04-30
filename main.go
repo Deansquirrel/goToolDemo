@@ -28,7 +28,7 @@ func getData() {
 		log.Error(fmt.Sprintf("get curr path error: %s", err.Error()))
 		return
 	}
-	fullPath := currPath + "\\" + "txt"
+	fullPath := currPath + goToolCommon.GetFolderSplitStr() + "txt"
 	_, fileList, err := goToolCommon.GetFolderAndFileList(fullPath)
 	if err != nil {
 		log.Error(fmt.Sprintf("get file list error: %s", err.Error()))
@@ -253,7 +253,7 @@ func commonTest() {
 	}
 	guid := goToolCommon.Guid()
 	fmt.Println(guid)
-	fmt.Println(goToolCommon.Md5(guid))
+	fmt.Println(goToolCommon.Md5([]byte(guid)))
 	//============================================================================
 	fmt.Println(goToolCommon.GetDateStr(time.Now()))
 	fmt.Println(goToolCommon.GetDateTimeStr(time.Now()))
