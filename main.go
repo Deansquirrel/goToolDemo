@@ -41,13 +41,13 @@ func printIP() {
 func sqlTest() {
 	config := goToolMSSql.MSSqlConfig{
 		"192.168.10.166",
-		2433,
+		1433,
 		"master",
 		"sa",
 		"",
 	}
 
-	conn, err := goToolMSSql.GetConn(&config)
+	conn, err := goToolMSSql.GetConn2000(&config)
 	if err != nil {
 		log.Error(fmt.Sprintf("get conn error: %s", err.Error()))
 		return
