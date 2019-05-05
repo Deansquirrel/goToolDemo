@@ -6,6 +6,7 @@ import (
 	"github.com/Deansquirrel/goToolEnvironment"
 	log "github.com/Deansquirrel/goToolLog"
 	"github.com/Deansquirrel/goToolMSSql"
+	"strings"
 	"time"
 )
 
@@ -41,43 +42,92 @@ func printIP() {
 func sqlTest() {
 	config := goToolMSSql.MSSqlConfig{
 		"192.168.10.166",
-		1433,
+		2433,
 		"master",
 		"sa",
 		"",
 	}
 
-	conn, err := goToolMSSql.GetConn2000(&config)
+	conn, err := goToolMSSql.GetConn(&config)
 	if err != nil {
 		log.Error(fmt.Sprintf("get conn error: %s", err.Error()))
 		return
 	}
+	tx, err := conn.Begin()
+	if err != nil {
+		log.Error(fmt.Sprintf("get tx error: %s", err.Error()))
+		return
+	}
+
+	var txErr error
 	defer func() {
-		_ = conn.Close()
+		if txErr != nil {
+			err = tx.Rollback()
+			if err != nil {
+				log.Error(fmt.Sprintf("rollback error: %s", err.Error()))
+			}
+		} else {
+			err = tx.Commit()
+			if err != nil {
+				log.Error(fmt.Sprintf("commit error: %s", err.Error()))
+			}
+		}
 	}()
 
-	rows, err := conn.Query("select name from sysdatabases")
-	if err != nil {
-		log.Error(fmt.Sprintf("search error: %s", err.Error()))
+	_, txErr = tx.Exec(getCreateSql())
+	if txErr != nil {
+		log.Error(fmt.Sprintf("create error: %s", txErr.Error()))
+		return
+	}
+
+	_, txErr = tx.Exec(getInsertSql(), "001", "A", "M", "1900-01-01", "11")
+	if txErr != nil {
+		log.Error(fmt.Sprintf("insert error: %s", txErr.Error()))
+		return
+	}
+
+	rows, txErr := tx.Query("select * from #Student")
+	if txErr != nil {
+		log.Error(fmt.Sprintf("search error: %s", txErr.Error()))
 		return
 	}
 	defer func() {
 		_ = rows.Close()
 	}()
 
-	var s string
+	var sno, sname, ssex, sclass string
+	var b time.Time
 	for rows.Next() {
-		err := rows.Scan(&s)
+		err = rows.Scan(&sno, &sname, &ssex, &b, &sclass)
 		if err != nil {
-			log.Error(fmt.Sprintf("scan data error: %s", err.Error()))
+			log.Error(fmt.Sprintf("scan error: %s", err.Error()))
 			return
 		}
-		log.Debug(s)
+		log.Debug(fmt.Sprintf("%s %s %s %s %s", sno, sname, ssex, goToolCommon.GetDateTimeStr(b), sclass))
 	}
-	if rows.Err() != nil {
-		log.Error(fmt.Sprintf("scan data error: %s", rows.Err().Error()))
-		return
-	}
+}
+
+func getCreateSql() string {
+	str := strings.Builder{}
+	str.WriteString("if object_id('tempdb..#Student') is not null ")
+	str.WriteString("begin ")
+	str.WriteString("	drop table #Student ")
+	str.WriteString("end ")
+
+	str.WriteString("CREATE TABLE #Student( ")
+	str.WriteString("	[Sno] [varchar](10) NOT NULL, ")
+	str.WriteString("	[Sname] [varchar](20) NULL, ")
+	str.WriteString("	[Ssex] [varchar](2) NULL, ")
+	str.WriteString("	[Sbirthday] [datetime] NULL, ")
+	str.WriteString("	[class] [varchar](20) NULL) ")
+	return str.String()
+}
+
+func getInsertSql() string {
+	str := strings.Builder{}
+	str.WriteString("INSERT INTO #Student([Sno],[Sname],[Ssex],[Sbirthday],[class]) ")
+	str.WriteString("VALUES (?,?,?,?,?)")
+	return str.String()
 }
 
 //func getData() {
