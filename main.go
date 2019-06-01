@@ -5,7 +5,6 @@ import (
 	"github.com/Deansquirrel/goToolCommon"
 	log "github.com/Deansquirrel/goToolLog"
 	"github.com/Deansquirrel/goToolMSSql"
-	"github.com/robfig/cron"
 	"time"
 )
 
@@ -49,7 +48,7 @@ func main() {
 		Pwd:    "",
 	}
 
-	closeChan := make(chan error)
+	//closeChan := make(chan error)
 
 	//0-19 * * * * ?
 	//10-29 * * * * ?
@@ -58,31 +57,43 @@ func main() {
 	//40-59 * * * * ?
 	//0-9,50-59 * * * * ?
 	taskIndex := 1
-	cronStr := "0-19 * * * * ?"
+	//cronStr := "0-19 * * * * ?"
 
-	c := cron.New()
-	err := c.AddFunc(cronStr, func() {
-		log.Debug("TEST")
-		conn, err := goToolMSSql.GetConn(&dbConfig)
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-		_, err = conn.Exec(fmt.Sprintf(sqlInsert, taskIndex))
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-	})
+	log.Debug("TEST")
+	conn, err := goToolMSSql.GetConn(&dbConfig)
 	if err != nil {
-		closeChan <- err
-	} else {
-		c.Start()
-	}
-
-	select {
-	case e := <-closeChan:
-		log.Error(e.Error())
+		log.Error(err.Error())
 		return
 	}
+	_, err = conn.Exec(fmt.Sprintf(sqlInsert, taskIndex))
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	//c := cron.New()
+	//err := c.AddFunc(cronStr, func() {
+	//	log.Debug("TEST")
+	//	conn, err := goToolMSSql.GetConn(&dbConfig)
+	//	if err != nil {
+	//		log.Error(err.Error())
+	//		return
+	//	}
+	//	_, err = conn.Exec(fmt.Sprintf(sqlInsert, taskIndex))
+	//	if err != nil {
+	//		log.Error(err.Error())
+	//		return
+	//	}
+	//})
+	//if err != nil {
+	//	closeChan <- err
+	//} else {
+	//	c.Start()
+	//}
+	//
+	//select {
+	//case e := <-closeChan:
+	//	log.Error(e.Error())
+	//	return
+	//}
 }
