@@ -1,9 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/Deansquirrel/goServiceSupportHelper"
-	"github.com/Deansquirrel/goServiceSupportHelper/global"
 	"github.com/Deansquirrel/goToolCommon"
 	log "github.com/Deansquirrel/goToolLog"
 	"github.com/Deansquirrel/goToolMSSqlHelper"
@@ -23,12 +23,16 @@ func main() {
 		log.Debug(fmt.Sprintf("use %fs", et.Sub(st).Seconds()))
 	}()
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	goServiceSupportHelper.SetHeartBeatCron("0/10 * * * * ?")
+	goServiceSupportHelper.SetRefreshSvrV3InfoCron("0/15 * * * * ?")
 	goServiceSupportHelper.InitParam(&goServiceSupportHelper.Params{
-		HttpAddress:   "http://127.0.0.1:8000",
-		ClientType:    "demo",
-		ClientVersion: global.Version,
-		Ctx:           global.Ctx,
-		Cancel:        global.Cancel,
+		HttpAddress:   "http://192.168.8.148:8000",
+		ClientType:    "demo1405",
+		ClientVersion: "1.0.2 Build20190806",
+		Ctx:           ctx,
+		Cancel:        cancel,
 	})
 
 	dbConfig, err := goToolSVRV3.GetSQLConfig(
@@ -45,7 +49,9 @@ func main() {
 		dbConfig.DbName = accList[0]
 	}
 	goServiceSupportHelper.SetOtherInfo(dbConfig, 1, true)
-	time.Sleep(time.Minute)
+	select {
+	case <-ctx.Done():
+	}
 }
 
 ////func init(){
