@@ -1,13 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/Deansquirrel/goServiceSupportHelper"
-	"github.com/Deansquirrel/goServiceSupportHelper/global"
 	"github.com/Deansquirrel/goToolCommon"
 	log "github.com/Deansquirrel/goToolLog"
-	"github.com/Deansquirrel/goToolMSSqlHelper"
-	"github.com/Deansquirrel/goToolSVRV3"
 	"time"
 )
 
@@ -23,29 +21,31 @@ func main() {
 		log.Debug(fmt.Sprintf("use %fs", et.Sub(st).Seconds()))
 	}()
 
+	ctx, cancel := context.WithCancel(context.Background())
 	goServiceSupportHelper.InitParam(&goServiceSupportHelper.Params{
 		HttpAddress:   "http://127.0.0.1:8000",
-		ClientType:    "demo",
-		ClientVersion: global.Version,
-		Ctx:           global.Ctx,
-		Cancel:        global.Cancel,
+		ClientType:    "DemoType",
+		ClientVersion: "0.0.0 Build20000101",
+		Ctx:           ctx,
+		Cancel:        cancel,
 	})
 
-	dbConfig, err := goToolSVRV3.GetSQLConfig(
-		"118.31.224.35",
-		7083,
-		"83",
-		"8301")
-	if err != nil {
-		log.Error(err.Error())
-		return
+	rFunc := goServiceSupportHelper.NewJob().FormatSSJob("Demo", getWorkerFunc())
+	rFunc()
+
+	//err := goServiceSupportHelper.NewJob().JobErrRecord("Demo","abcdefghijklmnopqrstuvwxyz")
+	//if err != nil {
+	//	log.Error(err.Error())
+	//} else {
+	//	log.Debug("success")
+	//}
+}
+
+func getWorkerFunc() func(id string) {
+	return func(id string) {
+		log.Debug("worker func")
+		_ = goServiceSupportHelper.JobErrRecord(id, "abcdefghijklmnopqrstuvwxyz")
 	}
-	accList, err := goToolSVRV3.GetAccountList(goToolMSSqlHelper.ConvertDbConfigTo2000(dbConfig), "83")
-	if accList != nil && len(accList) > 0 {
-		dbConfig.DbName = accList[0]
-	}
-	goServiceSupportHelper.SetOtherInfo(dbConfig, 1, true)
-	time.Sleep(time.Minute)
 }
 
 ////func init(){
