@@ -13,4 +13,7 @@
 
 .idea
 
+.toml
+
 DllLib
+/*.toml
