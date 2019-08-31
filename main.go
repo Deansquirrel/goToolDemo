@@ -13,75 +13,12 @@ import (
 	"time"
 )
 
-const (
-	sqlCrateLinkServer = "" +
-		"declare @rmtsvr sysname " +
-		"declare @rmtsvrsapassword sysname " +
-		"set @rmtsvr = ? " +
-		"set @rmtsvrsapassword  = ? " +
-		"exec sp_addlinkedserver '%s','','sqloledb',@rmtsvr " +
-		"exec sp_addlinkedsrvlogin '%s','false',null,'sa',@rmtsvrsapassword "
-	sqlDropLinkServer = "" +
-		"exec sp_dropserver '%s','droplogins'"
-)
-
-var prList []string
-
 //初始化
 func init() {
 	global.Args = &object.ProgramArgs{}
 	global.SysConfig = &object.SystemConfig{}
 
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
-
-	prList = make([]string, 0)
-	prList = append(prList, "pr_imp_repcgrkdt")
-	prList = append(prList, "pr_imp_rephpckdjdt")
-	prList = append(prList, "pr_imp_rephprkdjdt")
-	prList = append(prList, "pr_imp_repmdpsckdt")
-	prList = append(prList, "pr_imp_repmdxshprhz")
-	prList = append(prList, "pr_imp_reppsshdt")
-	prList = append(prList, "pr_imp_reppstzdt")
-	prList = append(prList, "pr_imp_reppstzqrdt")
-	prList = append(prList, "pr_imp_reppsxzdt")
-	prList = append(prList, "pr_imp_reppsxzshdt")
-	prList = append(prList, "pr_imp_repthdjdt")
-	prList = append(prList, "pr_imp_repthshqrdt")
-	prList = append(prList, "pr_imp_repthxzdt")
-	prList = append(prList, "pr_imp_repthxzshdt")
-	prList = append(prList, "pr_imp_repykdt")
-	prList = append(prList, "pr_imp_repzbwgrkdt")
-	prList = append(prList, "pr_imp_repzbwgrkylt")
-	prList = append(prList, "pr_imp_repmddbckdt")
-	prList = append(prList, "pr_imp_repdrshdt")
-	prList = append(prList, "pr_imp_repdbtzdt")
-	prList = append(prList, "pr_imp_repdbtzshdt")
-	prList = append(prList, "pr_imp_repddt")
-	prList = append(prList, "pr_imp_repdddt")
-	prList = append(prList, "pr_imp_repxsddthdt")
-	prList = append(prList, "pr_imp_reptcachz")
-	prList = append(prList, "pr_imp_repmdxssrhzt")
-	prList = append(prList, "pr_imp_repmdxssrzzdt")
-	prList = append(prList, "pr_imp_repzzhz")
-	prList = append(prList, "pr_imp_repslqhz")
-	prList = append(prList, "pr_imp_reppsdbhz")
-	prList = append(prList, "pr_imp_repstockchange")
-	prList = append(prList, "pr_imp_repicxkcz")
-	prList = append(prList, "pr_imp_repzshphz")
-	prList = append(prList, "pr_imp_repwgrkylhz")
-	prList = append(prList, "pr_imp_repwgrkrhz")
-	prList = append(prList, "pr_imp_repszxsckdt")
-	prList = append(prList, "pr_imp_repsczhdj")
-	prList = append(prList, "pr_imp_reppkdjdt")
-	prList = append(prList, "pr_imp_repkctzdt")
-	prList = append(prList, "pr_imp_repiccz")
-	prList = append(prList, "pr_imp_repddtdt")
-	prList = append(prList, "pr_imp_repddtdhpmxt")
-	prList = append(prList, "pr_imp_repiczk")
-	prList = append(prList, "pr_imp_repick")
-	prList = append(prList, "pr_imp_repwgwhhz")
-	prList = append(prList, "pr_imp_repsctl")
-	prList = append(prList, "pr_imp_repscrkmx")
 }
 
 func main() {
@@ -106,62 +43,107 @@ func main() {
 		common.RefreshSysConfig()
 	}
 
-	linkServer, err := createLinkServer(global.SysConfig.Total.RmtSvr, global.SysConfig.Total.RmtSvrSaPassWord)
+	lastDate, err := getLastOpenDate()
 	if err != nil {
-		return
-	}
-	defer func() {
-		err = dropLinkServer(linkServer)
-	}()
-
-	begDate, err := time.Parse("2006-01-02", global.SysConfig.Total.BegDate)
-	if err != nil {
-		log.Error(fmt.Sprintf("fmt begdate err: %s", err.Error()))
-		return
-	}
-	endDate, err := time.Parse("2006-01-02", global.SysConfig.Total.EndDate)
-	if err != nil {
-		log.Error(fmt.Sprintf("fmt enddate err: %s", err.Error()))
+		log.Error(err.Error())
 		return
 	}
 
-	tBegDate := begDate
-	d := time.Hour * 24 * 7
-	addD := time.Hour * 24 * 8
-	for {
-		if goToolCommon.GetDateStr(tBegDate.Add(d)) < goToolCommon.GetDateStr(endDate) {
-			getData(goToolCommon.GetDateStr(tBegDate), goToolCommon.GetDateStr(tBegDate.Add(d)), global.SysConfig.Total.YwDbName, linkServer)
-			tBegDate = tBegDate.Add(addD)
-		} else {
-			getData(goToolCommon.GetDateStr(tBegDate), goToolCommon.GetDateStr(endDate), global.SysConfig.Total.YwDbName, linkServer)
-			break
+	fDate, lDate := getDateRange(lastDate)
+
+	for currDate := fDate; goToolCommon.GetDateStr(currDate) <= goToolCommon.GetDateStr(lDate); currDate = currDate.AddDate(0, 0, 1) {
+		idList, err := getMdIdByOpenDate(currDate.AddDate(0, 0, -7))
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		for _, id := range idList {
+			err = addOpenDate(currDate, id)
+			if err != nil {
+				log.Error(err.Error())
+				return
+			}
 		}
 	}
 	log.Info("Complete")
 }
 
-func getData(begDate string, endDate string, ywDbName string, linkServer string) {
-	for _, pr := range prList {
-		err := getDataByPr(begDate, endDate, ywDbName, linkServer, pr)
+//获取最后一个有效营业日
+const (
+	sqlGetLastOpenDate = "" +
+		"select top 1 [date] " +
+		"from opendate " +
+		"order by [date] desc"
+)
+
+func getLastOpenDate() (time.Time, error) {
+	var t time.Time
+	var flag bool
+	rows, err := goToolMSSqlHelper.GetRowsBySQL(getLocalDbConfig(), sqlGetLastOpenDate)
+	if err != nil {
+		return time.Now(), err
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	for rows.Next() {
+		err = rows.Scan(&t)
 		if err != nil {
-			return
+			return time.Now(), nil
 		}
+		flag = true
+	}
+	if rows.Err() != nil {
+		return time.Now(), rows.Err()
+	}
+	if flag {
+		return t, nil
+	} else {
+		return time.Now().AddDate(0, -1, 0), nil
 	}
 }
 
-const (
-	sqlPr = "exec %s '%s','%s','%s','%s'"
-)
+func getDateRange(t time.Time) (time.Time, time.Time) {
+	fDate := t.AddDate(0, 1, -t.Day()+1)
+	lDate := fDate.AddDate(0, 1, -1)
+	return fDate, lDate
+}
 
-func getDataByPr(begDate string, endDate string, ywDbName string, linkServer string, pr string) error {
-	log.Debug(fmt.Sprintf("%s %s %s", pr, begDate, endDate))
-	dbConfig := goToolMSSqlHelper.ConvertDbConfigTo2000(getLocalDbConfig())
-	err := goToolMSSqlHelper.SetRowsBySQL2000(dbConfig, fmt.Sprintf(sqlPr, pr, begDate, endDate, ywDbName, linkServer))
+const sqlGetMdIdByOpenDate = "" +
+	"select mdid " +
+	"from opendate " +
+	"where [date] = ?"
+
+func getMdIdByOpenDate(t time.Time) ([]int, error) {
+	rows, err := goToolMSSqlHelper.GetRowsBySQL(getLocalDbConfig(), sqlGetMdIdByOpenDate, goToolCommon.GetDateStr(t))
 	if err != nil {
-		log.Error(fmt.Sprintf("%s get data[%s][%s] err:%s", pr, begDate, endDate, err.Error()))
-		return err
+		return nil, err
 	}
-	return nil
+	defer func() {
+		_ = rows.Close()
+	}()
+	rList := make([]int, 0)
+	for rows.Next() {
+		var id int
+		err = rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		rList = append(rList, id)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return rList, nil
+}
+
+const sqlAddOpenDate = "" +
+	"INSERT INTO [opendate]([mdid],[date],[yystate],[lastupdate]) " +
+	"VALUES (?,?,?,?)"
+
+func addOpenDate(t time.Time, mdId int) error {
+	log.Debug(fmt.Sprintf("%d %s", mdId, goToolCommon.GetDateStr(t)))
+	return goToolMSSqlHelper.SetRowsBySQL(getLocalDbConfig(), sqlAddOpenDate, mdId, goToolCommon.GetDateStr(t), 0, time.Now())
 }
 
 //获取本地库连接配置
@@ -173,33 +155,6 @@ func getLocalDbConfig() *goToolMSSql.MSSqlConfig {
 		User:   global.SysConfig.LocalDb.User,
 		Pwd:    global.SysConfig.LocalDb.Pwd,
 	}
-}
-
-func createLinkServer(rmtSvr string, rmtSvrSaPwd string) (string, error) {
-	uuid := goToolCommon.Guid()
-	sqlStr := fmt.Sprintf(sqlCrateLinkServer, uuid, uuid)
-	err := goToolMSSqlHelper.SetRowsBySQL2000(
-		goToolMSSqlHelper.ConvertDbConfigTo2000(getLocalDbConfig()),
-		sqlStr,
-		rmtSvr,
-		rmtSvrSaPwd)
-	if err != nil {
-		log.Error(fmt.Sprintf("create link server err: %s", err.Error()))
-		return "", err
-	}
-	return uuid, err
-}
-
-func dropLinkServer(id string) error {
-	sqlStr := fmt.Sprintf(sqlDropLinkServer, id)
-	err := goToolMSSqlHelper.SetRowsBySQL2000(
-		goToolMSSqlHelper.ConvertDbConfigTo2000(getLocalDbConfig()),
-		sqlStr)
-	if err != nil {
-		log.Error(fmt.Sprintf("drop link server err: %s", err.Error()))
-		return err
-	}
-	return nil
 }
 
 ////func init(){

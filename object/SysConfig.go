@@ -30,13 +30,8 @@ func (sc *SystemConfig) ToString() string {
 
 //通用配置
 type systemConfigTotal struct {
-	StdOut           bool   `toml:"stdOut"`
-	LogLevel         string `toml:"logLevel"`
-	RmtSvr           string `toml:"rmtsvr"`
-	RmtSvrSaPassWord string `toml:"rmtsvrsapassword"`
-	BegDate          string `toml:"begdate"`
-	EndDate          string `toml:"enddate"`
-	YwDbName         string `toml:"ywdbname"`
+	StdOut   bool   `toml:"stdOut"`
+	LogLevel string `toml:"logLevel"`
 }
 
 func (t *systemConfigTotal) FormatConfig() {
