@@ -104,8 +104,11 @@ func getLastOpenDate() (time.Time, error) {
 }
 
 func getDateRange(t time.Time) (time.Time, time.Time) {
-	fDate := t.AddDate(0, 1, -t.Day()+1)
-	lDate := fDate.AddDate(0, 1, -1)
+	log.Debug(goToolCommon.GetDateStr(t))
+	fDate := t.AddDate(0, 0, 1)
+	lDate := fDate.AddDate(0, 0, 1-fDate.Day()).AddDate(0, 1, -1)
+	log.Debug(goToolCommon.GetDateStr(fDate))
+	log.Debug(goToolCommon.GetDateStr(lDate))
 	return fDate, lDate
 }
 
